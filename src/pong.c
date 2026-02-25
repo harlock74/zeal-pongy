@@ -78,6 +78,9 @@ void init(void) {
 
     ascii_map(',', 16, 16);
 
+    // Clear layer1 (usually has garbage at init)
+    tilemap_fill(&vctx, LAYER1, EMPTY_TILE, 0, 0, WIDTH, HEIGHT);
+
     // Draw the tilemap
     load_tilemap();
 

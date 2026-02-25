@@ -25,6 +25,7 @@
 #define SCREEN_BOTTOM_BOUNDARY      232
 #define BALL_TOP_BOUNDARY           8
 #define BALL_BOTTOM_BOUNDARY        232
+#define EMPTY_TILE                  0
 
 typedef struct {
     gfx_sprite sprite;
