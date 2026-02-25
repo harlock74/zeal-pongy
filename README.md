@@ -16,10 +16,5 @@ Add a game menu
 Add sound
 Improve game logic / ball detection
 
-Screenshots
-image
-
-
-
 Contributors:
 @zoul0813
