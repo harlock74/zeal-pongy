@@ -12,12 +12,12 @@ set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 # Project
 # -------------------------------
 
-project(zeal-pongy C ASM)
+project(zpong C ASM)
 
 # -------------------------------
 # Executable
 # -------------------------------
-add_executable(zeal-pongy
+add_executable(zpong
     src/pong.c
     src/assets.c
 )
@@ -27,20 +27,20 @@ add_executable(zeal-pongy
 # -------------------------------
 zos_use(zvb)
 find_package(ZVB_SDK REQUIRED)
-target_link_libraries(zeal-pongy PUBLIC zvb_gfx zvb_sound)
+target_link_libraries(zpong PUBLIC zvb_gfx zvb_sound)
 
 zos_use(zgdk)
 find_package(ZGDK REQUIRED)
-target_link_libraries(zeal-pongy PUBLIC zgdk)
+target_link_libraries(zpong PUBLIC zgdk)
 
 # -------------------------------
 # Assets
 # -------------------------------
-gif2zeal(zeal-pongy FILES
+gif2zeal(zpong FILES
     "assets/pong.gif"
     COMPRESSED)
 
-tiled2zeal(zeal-pongy FILES
+tiled2zeal(zpong FILES
     "assets/tilemap.tmx"
     LAYER 0
     VERBOSE)
@@ -48,4 +48,4 @@ tiled2zeal(zeal-pongy FILES
 # -------------------------------
 # Convert to binary
 # -------------------------------
-zos_add_outputs(zeal-pongy)
+zos_add_outputs(zpong)
