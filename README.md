@@ -55,14 +55,11 @@ H:
 cd bin
 ./zpong
 ```
-## Development
-
-After building, run the gameplay, input, audio and rendering checks:
-
-```sh
-python3 tools/run_checks.py
-```
 
 ## Credits
 
 Original project contributors include **@zoul0813**. Licensed under [Apache 2.0](./LICENSE).
+
+## Editing game settings
+
+The build uses the SDK's GIF/Tiled converters. Fixed gameplay and animation settings live in `src/screen_settings.h` (splash prompt and demonstration area). No project metadata generator is required. Tiled objects are reference guides; moving one does not change the corresponding C settings automatically.

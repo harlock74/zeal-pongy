@@ -11,5 +11,7 @@ gfx_error assets_load(gfx_context* ctx)
 void __assets__(void) __naked
 {
     __asm__("__palette_start:\n.incbin \"assets/pong.ztp\"\n__palette_end:\n"
-            "__tiles_start:\n.incbin \"assets/pong.zts\"\n__tiles_end:\n");
+            "__tiles_start:\n.incbin \"assets/pong.zts\"\n__tiles_end:\n"
+            ".globl _court_map\n.globl _splash_map\n_court_map:\n.incbin \"assets/court.ztm\"\n"
+            "_splash_map:\n.incbin \"assets/splash.ztm\"\n");
 }

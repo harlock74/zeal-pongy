@@ -3,7 +3,7 @@
 #include <zvb_sprite.h>
 #include "render.h"
 #include "fixed_math.h"
-#include "maps.generated.h"
+#include "screen_settings.h"
 gfx_context video;
 static gfx_sprite actors[7];
 static uint8_t view,last_status=255,last_left=255,last_right=255,last_difficulty=255;
@@ -36,10 +36,14 @@ void render_clear_sprites(void)
 void render_load(uint8_t scene)
 {
     const uint8_t* source=scene==VIEW_SPLASH?splash_map:court_map;
-    uint8_t row[40],x,y,count=0,tile=0;
+    uint8_t row[40],x,y,count=0,tile=0,repeat=0;
     view=scene;
     for(y=0;y<30;y++) {
-        for(x=0;x<40;x++){if(!count){count=*source++;tile=*source++;}row[x]=tile;count--;}
+        for(x=0;x<40;x++) {
+            if(!count) {uint8_t control=*source++;count=(control&127)+1;repeat=control&128;if(repeat)tile=*source++;}
+            row[x]=repeat?tile:*source++;count--;
+            if(row[x]==255)row[x]=TILE_BLANK; /* SDK empty-cell encoding. */
+        }
         gfx_tilemap_load(&video,row,40,0,0,y);
     }
     memset(row,0,sizeof(row));

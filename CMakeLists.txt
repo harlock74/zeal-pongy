@@ -34,24 +34,14 @@ endif()
 add_executable(${target_name} ${game_main} src/pong.c src/input.c src/render.c src/audio.c src/assets.c)
 target_link_libraries(${target_name} PUBLIC core zgdk zvb_gfx zvb_sound)
 target_compile_options(${target_name} PRIVATE $<$<COMPILE_LANGUAGE:C>:--opt-code-speed>)
-target_include_directories(${target_name} PRIVATE src ${CMAKE_BINARY_DIR}/generated)
-add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/generated/maps.generated.h
-    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/gen_maps.py ${CMAKE_SOURCE_DIR}/assets ${CMAKE_BINARY_DIR}/generated/maps.generated.h
-    DEPENDS tools/gen_maps.py assets/court.tmx assets/splash.tmx assets/pong.tsx VERBATIM)
-add_custom_target(${target_name}_maps DEPENDS ${CMAKE_BINARY_DIR}/generated/maps.generated.h)
-add_dependencies(${target_name} ${target_name}_maps)
-add_custom_target(${target_name}_art_check
-    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/art.py --export VERBATIM)
-add_dependencies(${target_name} ${target_name}_art_check)
-# Refresh the Tiled GIF from Aseprite before the SDK's standard converter runs.
-# The export writes only changed bytes, so incremental builds stay incremental.
+target_include_directories(${target_name} PRIVATE src)
+# Tile layers are converted by the SDK; fixed settings live in src/screen_settings.h.
+tiled2zeal(${target_name} FILES assets/court.tmx assets/splash.tmx SIZE 40x30 COMPRESSED)
+# Standard SDK conversion of the indexed artwork, as in Video Poker and Checkers.
 gif2zeal(${target_name} FILES assets/pong.gif BIT 1 COLORS 2 STRIP 6)
-add_dependencies(${target_name}_pong_asset ${target_name}_art_check)
-set_property(SOURCE src/assets.c APPEND PROPERTY OBJECT_DEPENDS "${CMAKE_BINARY_DIR}/assets/pong.zts;${CMAKE_BINARY_DIR}/assets/pong.ztp")
-set_property(SOURCE src/render.c APPEND PROPERTY OBJECT_DEPENDS "${CMAKE_BINARY_DIR}/generated/maps.generated.h")
+set_property(SOURCE src/assets.c APPEND PROPERTY OBJECT_DEPENDS "${CMAKE_BINARY_DIR}/assets/pong.zts;${CMAKE_BINARY_DIR}/assets/pong.ztp;${CMAKE_BINARY_DIR}/assets/court.ztm;${CMAKE_BINARY_DIR}/assets/splash.ztm")
 zgdk_add_outputs(${target_name})
 add_custom_target(${target_name}_memory_check ALL
     COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/check_link_map.py ${CMAKE_SOURCE_DIR}/debug/${target_name}.map
-    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/art.py --packed ${CMAKE_BINARY_DIR}/assets/pong.zts
     DEPENDS ${target_name}_bin VERBATIM)
 
