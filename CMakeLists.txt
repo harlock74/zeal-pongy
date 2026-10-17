@@ -1,51 +1,57 @@
 cmake_minimum_required(VERSION 3.16)
-
-# -------------------------------
-# Toolchain
-# -------------------------------
+set(APP_VERSION_MAJOR 0)
+set(APP_VERSION_MINOR 1)
+set(APP_VERSION_PATCH 0)
+set(APP_NAME zpong)
+set(target_name zpong)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/bin)
 set(ZOS_TOOLCHAIN sdcc)
 include($ENV{ZOS_PATH}/cmake/zos_init.cmake)
-# Cross-compiling for Z80: avoid link checks in try-compile tests.
-set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
-
-# -------------------------------
-# Project
-# -------------------------------
-
-project(zpong C ASM)
-
-# -------------------------------
-# Executable
-# -------------------------------
-add_executable(zpong
-    src/pong.c
-    src/assets.c
-)
-
-# -------------------------------
-# SDKs
-# -------------------------------
-zos_use(zvb)
-find_package(ZVB_SDK REQUIRED)
-target_link_libraries(zpong PUBLIC zvb_gfx zvb_sound)
-
+project(${target_name} C ASM)
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+zos_use(coreutils)
+find_package(COREUTILS REQUIRED)
 zos_use(zgdk)
 find_package(ZGDK REQUIRED)
-target_link_libraries(zpong PUBLIC zgdk)
+zos_use(zvb)
+find_package(ZVB_SDK REQUIRED)
+option(PONG_NATIVE_CHECKS "Build native arithmetic and simulation regression executable" OFF)
+option(PONG_SIMULATION "Build deterministic long-session simulation executable" OFF)
+set(game_main src/main.c)
+if(PONG_NATIVE_CHECKS)
+    set(target_name zpong-checks)
+    set(APP_NAME zpong-checks)
+    set(game_main tests/native_checks.c)
+endif()
+if(PONG_SIMULATION)
+    if(PONG_NATIVE_CHECKS)
+        message(FATAL_ERROR "Select one diagnostic target at a time")
+    endif()
+    set(target_name zpong-sim)
+    set(APP_NAME zpong-sim)
+    set(game_main tests/simulation_checks.c)
+endif()
+add_executable(${target_name} ${game_main} src/pong.c src/input.c src/render.c src/audio.c src/assets.c)
+target_link_libraries(${target_name} PUBLIC core zgdk zvb_gfx zvb_sound)
+target_compile_options(${target_name} PRIVATE $<$<COMPILE_LANGUAGE:C>:--opt-code-speed>)
+target_include_directories(${target_name} PRIVATE src ${CMAKE_BINARY_DIR}/generated)
+add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/generated/maps.generated.h
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/gen_maps.py ${CMAKE_SOURCE_DIR}/assets ${CMAKE_BINARY_DIR}/generated/maps.generated.h
+    DEPENDS tools/gen_maps.py assets/court.tmx assets/splash.tmx assets/pong.tsx VERBATIM)
+add_custom_target(${target_name}_maps DEPENDS ${CMAKE_BINARY_DIR}/generated/maps.generated.h)
+add_dependencies(${target_name} ${target_name}_maps)
+add_custom_target(${target_name}_art_check
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/art.py --export VERBATIM)
+add_dependencies(${target_name} ${target_name}_art_check)
+# Refresh the Tiled GIF from Aseprite before the SDK's standard converter runs.
+# The export writes only changed bytes, so incremental builds stay incremental.
+gif2zeal(${target_name} FILES assets/pong.gif BIT 1 COLORS 2 STRIP 6)
+add_dependencies(${target_name}_pong_asset ${target_name}_art_check)
+set_property(SOURCE src/assets.c APPEND PROPERTY OBJECT_DEPENDS "${CMAKE_BINARY_DIR}/assets/pong.zts;${CMAKE_BINARY_DIR}/assets/pong.ztp")
+set_property(SOURCE src/render.c APPEND PROPERTY OBJECT_DEPENDS "${CMAKE_BINARY_DIR}/generated/maps.generated.h")
+zgdk_add_outputs(${target_name})
+add_custom_target(${target_name}_memory_check ALL
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/check_link_map.py ${CMAKE_SOURCE_DIR}/debug/${target_name}.map
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/art.py --packed ${CMAKE_BINARY_DIR}/assets/pong.zts
+    DEPENDS ${target_name}_bin VERBATIM)
 
-# -------------------------------
-# Assets
-# -------------------------------
-gif2zeal(zpong FILES
-    "assets/pong.gif"
-    COMPRESSED)
-
-tiled2zeal(zpong FILES
-    "assets/tilemap.tmx"
-    LAYER 0
-    VERBOSE)
-
-# -------------------------------
-# Convert to binary
-# -------------------------------
-zos_add_outputs(zpong)
